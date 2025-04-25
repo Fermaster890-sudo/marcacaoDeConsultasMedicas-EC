@@ -1,19 +1,20 @@
-import { NavigationContainer } from '@react-navigation/native';
-import { StatusBar } from 'react-native';
-import { ThemeProvider } from 'styled-components';
-import AppRoutes from './src/routes';
+import React from 'react';
+import { AuthProvider } from './src/contexts/AuthContext';
+import { AppNavigator } from './src/navigation/AppNavigator';
+import { ThemeProvider } from 'styled-components/native';
 import theme from './src/styles/theme';
+import { StatusBar } from 'react-native';
 
 export default function App() {
   return (
     <ThemeProvider theme={theme}>
-      <NavigationContainer>
-        <StatusBar
-          barStyle="light-content"
-          backgroundColor={theme.colors.primary}
+      <AuthProvider>
+        <StatusBar 
+          barStyle="light-content" 
+          backgroundColor={theme.colors.primary} 
         />
-        <AppRoutes />
-      </NavigationContainer>
+        <AppNavigator />
+      </AuthProvider>
     </ThemeProvider>
   );
 }
