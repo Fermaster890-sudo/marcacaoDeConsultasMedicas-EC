@@ -2,6 +2,7 @@
  * Tipos relacionados à navegação
  * Este arquivo contém todas as definições de tipos necessárias para a navegação entre telas
  */
+
 /**
  * Define as rotas disponíveis na aplicação e seus parâmetros
  * @property Login - Tela de login
@@ -24,4 +25,4 @@ export type RootStackParamList = {
   DoctorDashboard: undefined;
   PatientDashboard: undefined;
   UserManagement: undefined;
-};
+}; 

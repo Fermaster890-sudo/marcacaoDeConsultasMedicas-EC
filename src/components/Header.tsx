@@ -4,19 +4,6 @@ import { Avatar } from 'react-native-elements';
 import { useAuth } from '../contexts/AuthContext';
 import theme from '../styles/theme';
 
-export const HeaderContainer = styled.View`
-  background-color: ${theme.colors.background};
-  padding: 16px;
-  border-bottom-width: 1px;
-  border-bottom-color: ${theme.colors.border};
-`;
-
-export const HeaderTitle = styled.Text`
-  font-size: 24px;
-  font-weight: bold;
-  color: ${theme.colors.text};
-`;
-
 const Header: React.FC = () => {
   const { user } = useAuth();
 
