@@ -20,6 +20,8 @@ const RegisterScreen: React.FC = () => {
   const [password, setPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  // ADICIONAR estado para tipo de usuário
+  const [userType, setUserType] = useState<'PACIENTE' | 'ADMIN'>('PACIENTE');
 
   const handleRegister = async () => {
     try {
@@ -31,10 +33,12 @@ const RegisterScreen: React.FC = () => {
         return;
       }
 
+      // MODIFICAR função handleRegister
       await register({
         name,
         email,
         password,
+        userType, // NOVO - Envia tipo de usuário
       });
 
       // Após o registro bem-sucedido, navega para o login
@@ -76,6 +80,28 @@ const RegisterScreen: React.FC = () => {
       />
 
       {error ? <ErrorText>{error}</ErrorText> : null}
+
+      // ADICIONAR na JSX antes dos botões
+      <SectionTitle>Tipo de Usuário</SectionTitle>
+      <UserTypeContainer>
+        <UserTypeButton
+          selected={userType === 'PACIENTE'}
+          onPress={() => setUserType('PACIENTE')}
+        >
+          <UserTypeText selected={userType === 'PACIENTE'}>
+            Paciente
+          </UserTypeText>
+        </UserTypeButton>
+
+        <UserTypeButton
+          selected={userType === 'ADMIN'}
+          onPress={() => setUserType('ADMIN')}
+        >
+          <UserTypeText selected={userType === 'ADMIN'}>
+            Administrador
+          </UserTypeText>
+        </UserTypeButton>
+      </UserTypeContainer>
 
       <Button
         title="Cadastrar"
