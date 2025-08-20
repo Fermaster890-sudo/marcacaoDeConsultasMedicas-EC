@@ -1,198 +1,172 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import { apiClient, API_ENDPOINTS } from './api';
 import { User, LoginCredentials, RegisterData, AuthResponse } from '../types/auth';
 
-// Chaves de armazenamento
-const STORAGE_KEYS = {
-  USER: '@MedicalApp:user',
-  TOKEN: '@MedicalApp:token',
-  REGISTERED_USERS: '@MedicalApp:registeredUsers',
-};
+/**
+ * Interface para a resposta de login da API
+ */
+interface ApiLoginResponse {
+  token: string;
+}
 
-// DADOS MOCKADOS - MANTIDOS APENAS PARA COMPATIBILIDADE COM COMPONENTES ANTIGOS
-// TODO: Remover quando todos os componentes estiverem usando authApiService
+/**
+ * Interface para o usuário retornado pela API
+ */
+interface ApiUser {
+  id: number;
+  nome: string;
+  email: string;
+  tipo: 'ADMIN' | 'MEDICO' | 'PACIENTE';
+  especialidade?: string;
+}
 
-// Médicos mockados (DEPRECATED - usar authApiService.getAllDoctors())
-const mockDoctors = [
-  // Dados removidos - agora vêm da API
-];
-
-// Admin mockado (DEPRECATED - usar authApiService)
-const mockAdmin = {
-  id: 'admin',
-  name: 'Administrador',
-  email: 'admin@example.com',
-  role: 'admin' as const,
-  image: 'https://randomuser.me/api/portraits/men/3.jpg',
-};
-
-// Lista de usuários cadastrados (pacientes)
-let registeredUsers: (User & { password: string })[] = [];
-
-export const authService = {
+/**
+ * Serviço de autenticação que se conecta com a API do backend
+ */
+export const authApiService = {
+  /**
+   * Faz login com a API
+   */
   async signIn(credentials: LoginCredentials): Promise<AuthResponse> {
-    // Verifica se é o admin
-    if (credentials.email === mockAdmin.email && credentials.password === '123456') {
+    try {
+      // Faz a requisição de login
+      const loginResponse = await apiClient.post<ApiLoginResponse>(
+        API_ENDPOINTS.LOGIN,
+        {
+          email: credentials.email,
+          senha: credentials.password,
+        }
+      );
+
+      // Define o token no cliente da API
+      apiClient.setToken(loginResponse.token);
+
+      // Busca os dados do usuário
+      const userData = await this.getCurrentUser();
+
       return {
-        user: mockAdmin,
-        token: 'admin-token',
+        user: userData,
+        token: loginResponse.token,
       };
+    } catch (error) {
+      console.error('Erro no login:', error);
+      throw new Error('Email ou senha inválidos');
     }
-
-    // Verifica se é um médico
-    const doctor = mockDoctors.find(
-      (d) => d.email === credentials.email && credentials.password === '123456'
-    );
-    if (doctor) {
-      return {
-        user: doctor,
-        token: `doctor-token-${doctor.id}`,
-      };
-    }
-
-    // Verifica se é um paciente registrado
-    const patient = registeredUsers.find(
-      (p) => p.email === credentials.email
-    );
-    if (patient) {
-      // Verifica a senha do paciente
-      if (credentials.password === patient.password) {
-        // Remove a senha do objeto antes de retornar
-        const { password, ...patientWithoutPassword } = patient;
-        return {
-          user: patientWithoutPassword,
-          token: `patient-token-${patient.id}`,
-        };
-      }
-    }
-
-    throw new Error('Email ou senha inválidos');
   },
 
+  /**
+   * Registra um novo usuário (paciente)
+   */
   async register(data: RegisterData): Promise<AuthResponse> {
-    // Verifica se o email já está em uso
-    if (
-      mockDoctors.some((d) => d.email === data.email) ||
-      mockAdmin.email === data.email ||
-      registeredUsers.some((u) => u.email === data.email)
-    ) {
-      throw new Error('Email já está em uso');
-    }
-
-    // Cria um novo paciente
-    const newPatient: User & { password: string } = {
-      id: `patient-${registeredUsers.length + 1}`,
-      name: data.name,
-      email: data.email,
-      role: 'patient' as const,
-      image: `https://randomuser.me/api/portraits/${registeredUsers.length % 2 === 0 ? 'men' : 'women'}/${
-        registeredUsers.length + 1
-      }.jpg`,
-      password: data.password,
-    };
-
-    registeredUsers.push(newPatient);
-
-    // Salva a lista atualizada de usuários
-    await AsyncStorage.setItem(STORAGE_KEYS.REGISTERED_USERS, JSON.stringify(registeredUsers));
-
-    // Remove a senha do objeto antes de retornar
-    const { password, ...patientWithoutPassword } = newPatient;
-    return {
-      user: patientWithoutPassword,
-      token: `patient-token-${newPatient.id}`,
-    };
-  },
-
-  async signOut(): Promise<void> {
-    // Limpa os dados do usuário do AsyncStorage
-    await AsyncStorage.removeItem(STORAGE_KEYS.USER);
-    await AsyncStorage.removeItem(STORAGE_KEYS.TOKEN);
-  },
-
-  async getStoredUser(): Promise<User | null> {
     try {
-      const userJson = await AsyncStorage.getItem(STORAGE_KEYS.USER);
-      if (userJson) {
-        return JSON.parse(userJson);
-      }
-      return null;
+      // Cria o usuário
+      const newUser = await apiClient.post<ApiUser>(API_ENDPOINTS.REGISTER, {
+        nome: data.name,
+        email: data.email,
+        senha: data.password,
+        tipo: data.userType || 'PACIENTE', // Usa o tipo fornecido ou PACIENTE como padrão
+      });
+
+      // Faz login automaticamente após o registro
+      return await this.signIn({
+        email: data.email,
+        password: data.password,
+      });
     } catch (error) {
-      console.error('Erro ao obter usuário armazenado:', error);
-      return null;
+      console.error('Erro no registro:', error);
+      throw new Error('Erro ao criar conta. Verifique se o email já não está em uso.');
     }
   },
 
-  // Funções para o admin
-  async getAllUsers(): Promise<User[]> {
-    return [...mockDoctors, ...registeredUsers];
+  /**
+   * Obtém os dados do usuário atual baseado no token JWT
+   */
+  async getCurrentUser(): Promise<User> {
+    try {
+      // Busca o usuário atual usando o endpoint específico que utiliza o JWT
+      const currentUser = await apiClient.get<ApiUser>(API_ENDPOINTS.CURRENT_USER);
+      return this.mapApiUserToUser(currentUser);
+    } catch (error) {
+      console.error('Erro ao buscar usuário atual:', error);
+      throw new Error('Erro ao carregar dados do usuário');
+    }
   },
 
+  /**
+   * Busca todos os médicos
+   */
   async getAllDoctors(): Promise<User[]> {
-    // DEPRECATED: Use authApiService.getAllDoctors() instead
-    return [];
-  },
-
-  async getPatients(): Promise<User[]> {
-    return registeredUsers;
-  },
-
-  // Função para carregar usuários registrados ao iniciar o app
-  async loadRegisteredUsers(): Promise<void> {
     try {
-      const usersJson = await AsyncStorage.getItem(STORAGE_KEYS.REGISTERED_USERS);
-      if (usersJson) {
-        registeredUsers = JSON.parse(usersJson);
-      }
+      const doctors = await apiClient.get<ApiUser[]>(API_ENDPOINTS.DOCTORS);
+      return doctors.map(this.mapApiUserToUser);
     } catch (error) {
-      console.error('Erro ao carregar usuários registrados:', error);
+      console.error('Erro ao buscar médicos:', error);
+      throw new Error('Erro ao carregar médicos');
     }
   },
-};
 
-// BUSCAR todos os médicos
-async getAllDoctors(): Promise<User[]> {
-  try {
-    const doctors = await apiClient.get<ApiUser[]>(API_ENDPOINTS.DOCTORS);
-    return doctors.map(this.mapApiUserToUser);
-  } catch (error) {
-    console.error('Erro ao buscar médicos:', error);
-    throw new Error('Erro ao carregar médicos');
-  }
-},
+  /**
+   * Busca médicos por especialidade
+   */
+  async getDoctorsBySpecialty(specialty: string): Promise<User[]> {
+    try {
+      const doctors = await apiClient.get<ApiUser[]>(
+        `${API_ENDPOINTS.DOCTORS}?especialidade=${encodeURIComponent(specialty)}`
+      );
+      return doctors.map(this.mapApiUserToUser);
+    } catch (error) {
+      console.error('Erro ao buscar médicos por especialidade:', error);
+      throw new Error('Erro ao carregar médicos da especialidade');
+    }
+  },
 
-// BUSCAR médicos por especialidade
-async getDoctorsBySpecialty(specialty: string): Promise<User[]> {
-  try {
-    const doctors = await apiClient.get<ApiUser[]>(
-      `${API_ENDPOINTS.DOCTORS}?especialidade=${encodeURIComponent(specialty)}`
-    );
-    return doctors.map(this.mapApiUserToUser);
-  } catch (error) {
-    console.error('Erro ao buscar médicos por especialidade:', error);
-    throw new Error('Erro ao carregar médicos da especialidade');
-  }
-},
+  /**
+   * Faz logout
+   */
+  async signOut(): Promise<void> {
+    // Remove o token do cliente da API
+    apiClient.setToken(null);
+  },
 
-// MAPEAMENTO da API para frontend
-mapApiUserToUser(apiUser: ApiUser): User {
-  // ... conversão de tipos
-  // MODIFICAR na função mapApiUserToUser()
-  let image: string;
-  if (apiUser.tipo === 'ADMIN') {
-  // NOVO - Ícone de avatar para admins - SVG simples de usuário
-    image = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjUwIiBmaWxsPSIjNjY2NjY2Ii8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNNTAgNjVDMzUgNjUgMjUgNzUgMjUgODVWOTVINzVWODVDNzUgNzUgNjUgNjUgNTAgNjVaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
-  } else {
-    // Fotos aleatórias para médicos e pacientes
-    image = `https://randomuser.me/api/portraits/${apiUser.id % 2 === 0 ? 'men' : 'women'}/${(apiUser.id % 10) + 1}.jpg`;
-  }
+  /**
+   * Mapeia um usuário da API para o formato usado no frontend
+   */
+  mapApiUserToUser(apiUser: ApiUser): User {
+    // Define imagem baseada no tipo de usuário
+    let image: string;
+    if (apiUser.tipo === 'ADMIN') {
+      // Ícone de avatar para admins - SVG simples de usuário
+      image = 'data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTAwIiBoZWlnaHQ9IjEwMCIgdmlld0JveD0iMCAwIDEwMCAxMDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxjaXJjbGUgY3g9IjUwIiBjeT0iNTAiIHI9IjUwIiBmaWxsPSIjNjY2NjY2Ii8+CjxjaXJjbGUgY3g9IjUwIiBjeT0iMzUiIHI9IjE1IiBmaWxsPSJ3aGl0ZSIvPgo8cGF0aCBkPSJNNTAgNjVDMzUgNjUgMjUgNzUgMjUgODVWOTVINzVWODVDNzUgNzUgNjUgNjUgNTAgNjVaIiBmaWxsPSJ3aGl0ZSIvPgo8L3N2Zz4K';
+    } else {
+      // Fotos aleatórias para médicos e pacientes
+      image = `https://randomuser.me/api/portraits/${apiUser.id % 2 === 0 ? 'men' : 'women'}/${(apiUser.id % 10) + 1}.jpg`;
+    }
 
-  switch (apiUser.tipo) {
-    case 'MEDICO':
-      return {
-        ...baseUser,
-        role: 'doctor' as const,
-        specialty: apiUser.especialidade || 'Especialidade não informada',
-      };
-    // ... outros casos
-  }
+    const baseUser = {
+      id: apiUser.id.toString(),
+      name: apiUser.nome,
+      email: apiUser.email,
+      image,
+    };
+
+    switch (apiUser.tipo) {
+      case 'ADMIN':
+        return {
+          ...baseUser,
+          role: 'admin' as const,
+        };
+      case 'MEDICO':
+        return {
+          ...baseUser,
+          role: 'doctor' as const,
+          specialty: apiUser.especialidade || 'Especialidade não informada',
+        };
+      case 'PACIENTE':
+        return {
+          ...baseUser,
+          role: 'patient' as const,
+        };
+      default:
+        throw new Error(`Tipo de usuário inválido: ${apiUser.tipo}`);
+    }
+  },
 };

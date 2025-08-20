@@ -7,6 +7,7 @@ import theme from '../styles/theme';
 
 interface UserManagementProps {
   style?: ViewStyle;
+  onSignOut?: () => void;
 }
 
 interface StyledProps {
@@ -39,7 +40,7 @@ const getRoleText = (role: string) => {
   }
 };
 
-const UserManagement: React.FC<UserManagementProps> = ({ style }) => {
+const UserManagement: React.FC<UserManagementProps> = ({ style, onSignOut }) => {
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [loading, setLoading] = useState(true);
   const [changingPassword, setChangingPassword] = useState<string | null>(null);
@@ -145,8 +146,23 @@ const UserManagement: React.FC<UserManagementProps> = ({ style }) => {
     <Container style={style}>
       <SectionTitle>Gerenciar Usuários</SectionTitle>
       <SubTitle>Total: {users.length} usuários</SubTitle>
-
-      {users.map(renderUser)}
+      
+      <UsersListContainer>
+        {users.map(renderUser)}
+        
+        {onSignOut && (
+          <LogoutButtonContainer>
+            <Button
+              title="Sair"
+              onPress={onSignOut}
+              buttonStyle={styles.logoutButton}
+              titleStyle={styles.buttonText}
+            />
+          </LogoutButtonContainer>
+        )}
+      </UsersListContainer>
+      
+      <BottomSpacer />
     </Container>
   );
 };
@@ -155,20 +171,41 @@ const UserManagement: React.FC<UserManagementProps> = ({ style }) => {
 
 const Container = styled.View`
   flex: 1;
-  padding: 16px;
+  padding: 20px;
+  padding-top: 10px;
+  padding-bottom: 0px;
+`;
+
+const UsersListContainer = styled.View`
+  flex: 1;
+  margin-bottom: 20px;
+  margin-top: 10px;
+`;
+
+const BottomSpacer = styled.View`
+  height: 80px;
 `;
 
 const SectionTitle = styled.Text`
-  font-size: 20px;
+  font-size: 22px;
   font-weight: bold;
   color: ${theme.colors.primary};
-  margin-bottom: 8px;
+  margin-bottom: 12px;
+  margin-top: 20px;
+  z-index: 10;
+  background-color: ${theme.colors.background};
+  padding: 8px 0px;
 `;
 
 const SubTitle = styled.Text`
-  font-size: 14px;
+  font-size: 16px;
   color: ${theme.colors.secondary};
-  margin-bottom: 16px;
+  margin-bottom: 20px;
+  margin-top: 5px;
+  z-index: 10;
+  background-color: ${theme.colors.background};
+  padding: 4px 0px;
+  font-weight: 500;
 `;
 
 const UserContainer = styled.View`
@@ -232,6 +269,15 @@ const LoadingText = styled.Text`
   margin-top: 40px;
 `;
 
+const LogoutButtonContainer = styled.View`
+  margin-top: 30px;
+  margin-bottom: 20px;
+  padding-top: 20px;
+  border-top-width: 2px;
+  border-top-color: ${theme.colors.border};
+  background-color: ${theme.colors.background};
+`;
+
 const styles = {
   passwordInput: {
     marginBottom: 12,
@@ -257,6 +303,12 @@ const styles = {
     fontSize: 14,
     fontWeight: 'bold',
   } as TextStyle,
+  logoutButton: {
+    backgroundColor: theme.colors.error,
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 30,
+  } as ViewStyle,
 };
 
 export default UserManagement;
