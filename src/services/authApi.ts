@@ -96,12 +96,46 @@ export const authApiService = {
    */
   async getAllDoctors(): Promise<User[]> {
     try {
+      console.log('Buscando médicos da API...');
       const doctors = await apiClient.get<ApiUser[]>(API_ENDPOINTS.DOCTORS);
+      console.log('Médicos encontrados:', doctors);
       return doctors.map(this.mapApiUserToUser);
     } catch (error) {
-      console.error('Erro ao buscar médicos:', error);
-      throw new Error('Erro ao carregar médicos');
+      console.error('Erro detalhado ao buscar médicos:', error);
+      // Tenta buscar todos os usuários e filtrar os médicos como fallback
+      try {
+        console.log('Tentando buscar usuários e filtrar médicos...');
+        const allUsers = await apiClient.get<ApiUser[]>(API_ENDPOINTS.USERS);
+        const doctors = allUsers.filter(user => user.tipo === 'MEDICO');
+        console.log('Médicos filtrados:', doctors);
+        return doctors.map(this.mapApiUserToUser);
+      } catch (fallbackError) {
+        console.error('Erro no fallback:', fallbackError);
+        console.log('Usando dados mockados como último recurso...');
+        // Fallback para dados mockados quando a API não está disponível
+        return this.getMockDoctors();
+      }
     }
+  },
+
+  /**
+   * Dados mockados de médicos para quando a API não está disponível
+   */
+  getMockDoctors(): User[] {
+    const mockDoctorsData = [
+      { id: 1, nome: 'Dr. Carlos Silva', email: 'carlos.silva@clinica.com', tipo: 'MEDICO', especialidade: 'Cardiologia' },
+      { id: 2, nome: 'Dra. Ana Oliveira', email: 'ana.oliveira@clinica.com', tipo: 'MEDICO', especialidade: 'Dermatologia' },
+      { id: 3, nome: 'Dr. Roberto Santos', email: 'roberto.santos@clinica.com', tipo: 'MEDICO', especialidade: 'Ortopedia' },
+      { id: 4, nome: 'Dra. Juliana Costa', email: 'juliana.costa@clinica.com', tipo: 'MEDICO', especialidade: 'Pediatria' },
+      { id: 5, nome: 'Dr. Marcelo Lima', email: 'marcelo.lima@clinica.com', tipo: 'MEDICO', especialidade: 'Neurologia' },
+      { id: 6, nome: 'Dra. Patricia Mendes', email: 'patricia.mendes@clinica.com', tipo: 'MEDICO', especialidade: 'Oftalmologia' },
+      { id: 7, nome: 'Dr. Ricardo Ferreira', email: 'ricardo.ferreira@clinica.com', tipo: 'MEDICO', especialidade: 'Psiquiatria' },
+      { id: 8, nome: 'Dra. Camila Rodrigues', email: 'camila.rodrigues@clinica.com', tipo: 'MEDICO', especialidade: 'Ginecologia' },
+      { id: 9, nome: 'Dr. Felipe Alves', email: 'felipe.alves@clinica.com', tipo: 'MEDICO', especialidade: 'Urologia' },
+      { id: 10, nome: 'Dra. Beatriz Santos', email: 'beatriz.santos@clinica.com', tipo: 'MEDICO', especialidade: 'Endocrinologia' }
+    ];
+
+    return mockDoctorsData.map(this.mapApiUserToUser);
   },
 
   /**

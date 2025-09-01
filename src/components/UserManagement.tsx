@@ -56,6 +56,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ style, onSignOut }) => 
       const usersData = await adminApiService.getAllUsers();
       setUsers(usersData);
     } catch (error) {
+      console.error('Erro ao carregar usuários:', error);
       Alert.alert('Erro', 'Não foi possível carregar os usuários');
     } finally {
       setLoading(false);
@@ -75,7 +76,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ style, onSignOut }) => 
       };
 
       await adminApiService.changeUserPassword(changeData);
-
+      
       Alert.alert('Sucesso', 'Senha alterada com sucesso!');
       setChangingPassword(null);
       setNewPassword('');
@@ -94,7 +95,7 @@ const UserManagement: React.FC<UserManagementProps> = ({ style, onSignOut }) => 
           {user.specialty && ` - ${user.specialty}`}
         </UserRole>
       </UserInfo>
-
+      
       {changingPassword === user.id ? (
         <PasswordContainer>
           <Input
@@ -166,8 +167,6 @@ const UserManagement: React.FC<UserManagementProps> = ({ style, onSignOut }) => 
     </Container>
   );
 };
-
-// STYLED COMPONENTS - Layout otimizado
 
 const Container = styled.View`
   flex: 1;

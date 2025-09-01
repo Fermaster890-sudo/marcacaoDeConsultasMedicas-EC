@@ -32,6 +32,8 @@ const LoginScreen: React.FC = () => {
     }
   };
 
+
+
   return (
     <Container>
       <Title>App Marcação de Consultas</Title>

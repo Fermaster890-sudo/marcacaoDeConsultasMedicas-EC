@@ -60,10 +60,10 @@ export const adminApiService = {
       case 'ADMIN':
         return { ...baseUser, role: 'admin' as const };
       case 'MEDICO':
-        return {
-          ...baseUser,
-          role: 'doctor' as const,
-          specialty: apiUser.especialidade || 'Especialidade não informada'
+        return { 
+          ...baseUser, 
+          role: 'doctor' as const, 
+          specialty: apiUser.especialidade || 'Especialidade não informada' 
         };
       case 'PACIENTE':
         return { ...baseUser, role: 'patient' as const };
