@@ -11,26 +11,15 @@ import theme from '../../styles/theme';
 import Header from '../../components/Header';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { AppointmentCard, ButtonContainer, Container, EmptyText, LoadingText, StatusBadge, StatusText, styles, Title } from './styles';
+import { Appointment } from './interfaces/appointment';
 
 type DoctorDashboardScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'DoctorDashboard'>;
 };
 
-interface Appointment {
-  id: string;
-  patientId: string;
-  patientName: string;
-  doctorId: string;
-  doctorName: string;
-  date: string;
-  time: string;
-  specialty: string;
-  status: 'pending' | 'confirmed' | 'cancelled';
-}
 
-interface StyledProps {
-  status: string;
-}
+
+
 
 const getStatusColor = (status: string) => {
   switch (status) {

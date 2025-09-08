@@ -1,8 +1,9 @@
 import styled from 'styled-components/native';
 import theme from '../../../styles/theme';
 import { ListItem } from 'react-native-elements';
-import { StyledProps } from 'styled-components';
+
 import { getStatusColor } from '../../AdminDashboardScreen/utils/statusHelpers';
+import { StyledProps } from '../interfaces/styledprops';
 
 export const styles = {
   scrollContent: {
