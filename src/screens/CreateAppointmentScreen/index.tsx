@@ -15,7 +15,7 @@ import { authApiService } from '../../services/authApi';
 import { User } from '../../types/auth';
 import { Appointment } from './interfaces/appointment';
 import { Doctor } from './interfaces/doctor';
-import { Container, SectionTitle, styles, Title } from './styles';
+import { Container, ErrorText, SectionTitle, styles, Title } from './styles';
 
 type CreateAppointmentScreenProps = {
   navigation: NativeStackNavigationProp<RootStackParamList, 'CreateAppointment'>;
