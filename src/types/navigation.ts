@@ -5,8 +5,7 @@
 
 /**
  * Define as rotas disponíveis na aplicação e seus parâmetros
- * @property Login - Tela de login
- * @property Register - Tela de registro
+ * @property Auth - Tela unificada de autenticação (login/registro)
  * @property Home - Tela inicial da aplicação
  * @property CreateAppointment - Tela de criação de consulta
  * @property Profile - Tela de perfil do usuário
@@ -16,8 +15,7 @@
  * @property UserManagement - Tela de gerenciamento de usuários
  */
 export type RootStackParamList = {
-  Login: undefined;
-  Register: undefined;
+  Auth: undefined;
   Home: undefined;
   CreateAppointment: undefined;
   Profile: undefined;
